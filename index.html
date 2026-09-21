@@ -168,7 +168,7 @@
         <section class="screen" id="s4">
           <div class="stamp">Принято</div>
           <h2>Договорились!</h2>
-          <p class="lead">Отправь мне свой ответ — остальное беру на себя.</p>
+          <p class="lead">Нажми кнопку — ответ сразу прилетит мне в Telegram.</p>
           <div class="details">
             <div class="row"><span>Куда</span><span id="rPlace"></span></div>
             <div class="row"><span>Когда</span><span id="rDate"></span></div>
@@ -176,7 +176,7 @@
           </div>
           <div class="actions">
             <button class="btn-ghost" id="restart">Изменить</button>
-            <button class="btn-next" id="send">Отправить ответ</button>
+            <button class="btn-next" id="send">Ответить в Telegram</button>
           </div>
           <p class="hint" id="hint4"></p>
         </section>
@@ -408,13 +408,17 @@
       document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); document.body.removeChild(ta); return ok;
     } catch (e) { return false; }
   }
+  const TG = 'DemidCOO';
   $('send').addEventListener('click', async () => {
     const msg = 'Да! 💌 Иду с тобой на свидание.\nКуда: ' + state.place + '\nКогда: ' + prettyDate(state.date) + ', ' + state.time;
-    if (navigator.share) { try { await navigator.share({ text: msg }); $('hint4').textContent = 'Отправлено!'; return; } catch (e) {} }
     let ok = false;
     if (navigator.clipboard && window.isSecureContext) { try { await navigator.clipboard.writeText(msg); ok = true; } catch (e) { ok = fallback(msg); } }
     else ok = fallback(msg);
-    $('hint4').textContent = ok ? 'Ответ скопирован — вставь его в чат со мной.' : msg;
+    $('hint4').textContent = ok
+      ? 'Открываю чат… Если текст не появился сам — он уже скопирован, просто вставь его.'
+      : 'Открываю чат… Если текст не появился сам, скопируй его отсюда:\n' + msg;
+    const url = 'https://t.me/' + TG + '?text=' + encodeURIComponent(msg);
+    setTimeout(() => { window.location.href = url; }, 400);
   });
 
   function hearts(n) {
