@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Для Златы">
+<title>Злата, поймай сердечки 💌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #5A0F2E; --bg2: #3E0820;
+    --paper: #FFF1F4; --ink: #2A0A18; --muted: #8A5A6C;
+    --accent: #FF3B5C; --gold: #F2B544; --line: #F0C9D4;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #3A0A1E; --bg2: #22040F; } }
+  :root[data-theme="dark"] { --bg: #3A0A1E; --bg2: #22040F; }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { height: 100%; margin: 0; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    background: radial-gradient(120% 90% at 50% 0%, var(--bg) 0%, var(--bg2) 100%);
+    background-color: var(--bg2);
+    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink); overflow: hidden;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .app { position: relative; height: 100%; max-width: 520px; margin: 0 auto; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+  .shake { animation: shake .3s; }
+  @keyframes shake { 0%,100%{transform:none} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+  .hud { position: absolute; left: 16px; right: 16px; top: 14px; z-index: 3; color: var(--paper); pointer-events: none; display: none; }
+  .hud.on { display: block; }
+  .hud-row { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .hud-row b { font-family: "Unbounded", sans-serif; font-size: 20px; }
+  .bar { height: 10px; border-radius: 999px; background: rgba(255,241,244,.18); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .2s ease; }
+
+  .overlay { position: absolute; inset: 0; z-index: 4; display: none; align-items: center; justify-content: center; padding: 20px 16px; overflow-y: auto; }
+  .overlay.on { display: flex; }
+
+  .ticket { width: 100%; max-width: 420px; background: var(--paper); border-radius: 22px; position: relative; box-shadow: 0 30px 60px -20px rgba(0,0,0,.55); transform: rotate(-1.2deg); animation: pop .4s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: rotate(-1.2deg) scale(.94); } to { opacity: 1; transform: rotate(-1.2deg) scale(1); } }
+  .ticket-top { padding: 32px 26px 24px; }
+  .ticket-stub { border-top: 2px dashed var(--line); padding: 14px 26px 18px; display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); position: relative; }
+  .ticket-stub::before, .ticket-stub::after { content: ""; position: absolute; top: -13px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg2); }
+  .ticket-stub::before { left: -12px; } .ticket-stub::after { right: -12px; }
+  .serial { font-weight: 700; color: var(--accent); }
+
+  h1 { font-family: "Unbounded", "Arial Black", sans-serif; font-weight: 900; font-size: clamp(28px, 8vw, 38px); line-height: 1.05; margin: 0 0 14px; letter-spacing: -0.02em; }
+  h2 { font-family: "Unbounded", "Arial Black", sans-serif; font-weight: 700; font-size: 24px; line-height: 1.15; margin: 0 0 6px; }
+  p.lead { margin: 0 0 22px; font-size: 16px; line-height: 1.5; color: var(--muted); }
+  .rules { display: flex; gap: 14px; margin: 0 0 24px; }
+  .rule { flex: 1; background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 12px; font-size: 14px; line-height: 1.35; }
+  .rule span { display: block; font-size: 26px; margin-bottom: 4px; }
+
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .btn-next { width: 100%; background: var(--ink); color: var(--paper); border: none; border-radius: 16px; padding: 16px; font-weight: 700; font-size: 16px; }
+  .btn-next:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-big { background: var(--accent); box-shadow: 0 7px 0 #C4163A; font-family: "Unbounded", sans-serif; font-size: 17px; }
+  .btn-big:active { box-shadow: 0 2px 0 #C4163A; transform: translateY(5px); }
+
+  .screen { display: none; } .screen.active { display: block; }
+  .answers { display: flex; gap: 12px; align-items: center; min-height: 64px; flex-wrap: wrap; }
+  .btn-yes { font-family: "Unbounded", sans-serif; font-weight: 700; background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 14px 30px; font-size: 18px; transition: transform .25s cubic-bezier(.3,1.6,.5,1); box-shadow: 0 8px 0 #C4163A; transform-origin: left center; }
+  .btn-no { background: transparent; color: var(--muted); border: 2px solid var(--line); border-radius: 999px; padding: 12px 22px; font-size: 16px; font-weight: 600; transition: left .25s ease, top .25s ease; white-space: nowrap; z-index: 30; }
+  .btn-no.flying { position: fixed; background: var(--paper); }
+  .tease { font-size: 14px; color: var(--muted); margin: 14px 0 0; min-height: 20px; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+  .choice { border: 2px solid var(--line); background: #fff; border-radius: 16px; padding: 14px 12px; text-align: left; color: var(--ink); display: flex; flex-direction: column; gap: 6px; }
+  .choice .emo { font-size: 26px; line-height: 1; } .choice .t { font-weight: 700; font-size: 15px; }
+  .choice[aria-pressed="true"] { border-color: var(--accent); background: #FFE3E9; }
+  .choice.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 12px; }
+  .fld { display: block; font-weight: 700; font-size: 14px; margin: 0 0 8px; }
+  input[type="date"] { width: 100%; font: inherit; font-size: 16px; padding: 12px 14px; border: 2px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); margin-bottom: 18px; -webkit-appearance: none; min-height: 48px; }
+  .times { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+  .time { border: 2px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 9px 16px; font-weight: 600; font-size: 15px; }
+  .time[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .hint { font-size: 13px; color: var(--muted); margin: 10px 0 0; min-height: 18px; white-space: pre-line; }
+  .details { margin: 4px 0 22px; border-top: 1px solid var(--line); }
+  .row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .row span:first-child { color: var(--muted); } .row span:last-child { font-weight: 700; text-align: right; }
+  .stamp { position: absolute; top: 22px; right: 18px; font-family: "Unbounded", sans-serif; font-weight: 900; font-size: 14px; color: var(--accent); border: 3px solid var(--accent); border-radius: 10px; padding: 6px 10px; transform: rotate(12deg); opacity: .85; }
+  .actions { display: flex; gap: 10px; } .actions .btn-next { flex: 1; }
+  .btn-ghost { flex: 1; background: transparent; border: 2px solid var(--ink); color: var(--ink); border-radius: 16px; padding: 14px; font-weight: 700; font-size: 15px; }
+
+  .heart { position: fixed; pointer-events: none; z-index: 40; animation: fall linear forwards; }
+  @keyframes fall { from { transform: translateY(-10vh) rotate(0); } to { transform: translateY(110vh) rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ticket, .heart { animation: none; } .heart { display: none; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <canvas id="game" aria-label="Игра: лови сердечки"></canvas>
+
+  <div class="hud" id="hud">
+    <div class="hud-row"><span>Поймано</span><span><b id="score">0</b> из <span id="goal">15</span></span></div>
+    <div class="bar"><i id="bar"></i></div>
+  </div>
+
+  <!-- Start -->
+  <div class="overlay on" id="ovStart">
+    <div class="ticket">
+      <div class="ticket-top">
+        <h1>Злата, тут для тебя кое-что спрятано</h1>
+        <p class="lead">Поймай 15 сердечек в конверт — и он откроется.</p>
+        <div class="rules">
+          <div class="rule"><span>👆</span>Води пальцем по экрану, чтобы двигать конверт</div>
+          <div class="rule"><span>💔</span>Разбитые сердечки отнимают по одному</div>
+        </div>
+        <button class="btn-next btn-big" id="startBtn">Играть</button>
+      </div>
+      <div class="ticket-stub"><span>Секретное послание</span><span class="serial">для Златы</span></div>
+    </div>
+  </div>
+
+  <!-- Invitation -->
+  <div class="overlay" id="ovInvite">
+    <div class="ticket">
+      <div class="ticket-top">
+
+        <section class="screen active" id="s1" aria-live="polite">
+          <h1>Злата, пойдёшь со мной на свидание?</h1>
+          <p class="lead">Ты поймала все сердечки. Осталось ответить на один вопрос.</p>
+          <div class="answers">
+            <button class="btn-yes" id="yes">Да!</button>
+            <button class="btn-no" id="no">Нет</button>
+          </div>
+          <p class="tease" id="tease"></p>
+        </section>
+
+        <section class="screen" id="s2">
+          <h2>Ура! Куда пойдём?</h2>
+          <p class="lead">Выбери то, что больше по душе.</p>
+          <div class="choices" id="places">
+            <button class="choice" aria-pressed="false" data-v="Кофе и десерт"><span class="emo">☕</span><span class="t">Кофе и десерт</span></button>
+            <button class="choice" aria-pressed="false" data-v="Прогулка"><span class="emo">🌙</span><span class="t">Прогулка</span></button>
+            <button class="choice" aria-pressed="false" data-v="Кино"><span class="emo">🎬</span><span class="t">Кино</span></button>
+            <button class="choice" aria-pressed="false" data-v="Ужин"><span class="emo">🍝</span><span class="t">Ужин</span></button>
+            <button class="choice wide" aria-pressed="false" data-v="Сюрприз"><span class="emo">🎁</span><span class="t">Сюрприз — доверюсь тебе</span></button>
+          </div>
+          <button class="btn-next" id="toS3" disabled>Дальше</button>
+        </section>
+
+        <section class="screen" id="s3">
+          <h2>Когда тебе удобно?</h2>
+          <p class="lead">Я подстроюсь.</p>
+          <label class="fld" for="date">День</label>
+          <input type="date" id="date">
+          <span class="fld">Время</span>
+          <div class="times" id="times">
+            <button class="time" aria-pressed="false" data-v="днём">Днём</button>
+            <button class="time" aria-pressed="false" data-v="ближе к вечеру">Ближе к вечеру</button>
+            <button class="time" aria-pressed="false" data-v="вечером">Вечером</button>
+          </div>
+          <button class="btn-next" id="toS4" disabled>Готово</button>
+          <p class="hint" id="hint3"></p>
+        </section>
+
+        <section class="screen" id="s4">
+          <div class="stamp">Принято</div>
+          <h2>Договорились!</h2>
+          <p class="lead">Отправь мне свой ответ — остальное беру на себя.</p>
+          <div class="details">
+            <div class="row"><span>Куда</span><span id="rPlace"></span></div>
+            <div class="row"><span>Когда</span><span id="rDate"></span></div>
+            <div class="row"><span>Время</span><span id="rTime"></span></div>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost" id="restart">Изменить</button>
+            <button class="btn-next" id="send">Отправить ответ</button>
+          </div>
+          <p class="hint" id="hint4"></p>
+        </section>
+
+      </div>
+      <div class="ticket-stub"><span>Билет на одно свидание</span><span class="serial" id="serial">№ 0001</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const GOAL = 15;
+  $('goal').textContent = GOAL;
+  $('serial').textContent = '№ ' + String(Math.floor(1000 + Math.random() * 9000));
+
+  // ================= GAME =================
+  const canvas = $('game'), ctx = canvas.getContext('2d'), app = $('app');
+  let W = 0, H = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const r = canvas.getBoundingClientRect();
+    W = r.width; H = r.height;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    catcher.y = H - 70;
+    catcher.x = Math.min(Math.max(catcher.x || W / 2, 40), W - 40);
+  }
+  const catcher = { x: 0, y: 0, tx: 0, w: 76, bounce: 0 };
+  let items = [], pops = [], score = 0, running = false, last = 0, spawnT = 0, elapsed = 0, won = false;
+  const bgHearts = Array.from({ length: 14 }, () => ({ x: Math.random(), y: Math.random(), s: 10 + Math.random() * 16, v: 0.01 + Math.random() * 0.02 }));
+
+  function setTarget(clientX) {
+    const r = canvas.getBoundingClientRect();
+    catcher.tx = Math.min(Math.max(clientX - r.left, catcher.w / 2), W - catcher.w / 2);
+  }
+  canvas.addEventListener('pointerdown', (e) => setTarget(e.clientX));
+  canvas.addEventListener('pointermove', (e) => { if (e.pointerType !== 'mouse' || true) setTarget(e.clientX); });
+  canvas.addEventListener('touchmove', (e) => { e.preventDefault(); setTarget(e.touches[0].clientX); }, { passive: false });
+  const keys = {};
+  window.addEventListener('keydown', (e) => { keys[e.key] = true; });
+  window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+  function spawn() {
+    const bad = elapsed > 2.5 && Math.random() < 0.24;
+    const size = bad ? 34 : 30 + Math.random() * 10;
+    const speed = 150 + Math.min(elapsed * 5, 120) + Math.random() * 60;
+    items.push({ x: 24 + Math.random() * (W - 48), y: -30, vy: speed, bad, size, rot: (Math.random() - .5) * .6, wob: Math.random() * 6 });
+  }
+
+  function emoji(ch, x, y, size, rot) {
+    ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot);
+    ctx.font = size + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(ch, 0, 0); ctx.restore();
+  }
+
+  function updateHud() {
+    $('score').textContent = score;
+    $('bar').style.width = (score / GOAL * 100) + '%';
+  }
+
+  function frame(t) {
+    if (!running) return;
+    const dt = Math.min((t - last) / 1000, 0.05); last = t;
+    elapsed += dt;
+
+    if (keys['ArrowLeft']) catcher.tx = Math.max(catcher.w / 2, catcher.tx - 420 * dt);
+    if (keys['ArrowRight']) catcher.tx = Math.min(W - catcher.w / 2, catcher.tx + 420 * dt);
+    catcher.x += (catcher.tx - catcher.x) * Math.min(1, dt * 18);
+    catcher.bounce = Math.max(0, catcher.bounce - dt * 4);
+
+    if (!won) {
+      spawnT -= dt;
+      if (spawnT <= 0) { spawn(); spawnT = Math.max(0.42, 0.75 - elapsed * 0.01); }
+    }
+
+    ctx.clearRect(0, 0, W, H);
+    // soft background hearts
+    ctx.globalAlpha = 0.12;
+    bgHearts.forEach(b => { b.y -= b.v * dt; if (b.y < -0.05) { b.y = 1.05; b.x = Math.random(); } emoji('♥', b.x * W, b.y * H, b.s, 0); });
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#FFF1F4';
+
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      it.y += it.vy * dt; it.wob += dt * 3;
+      const x = it.x + Math.sin(it.wob) * 6;
+      const cy = catcher.y - 8;
+      if (it.y > cy - 26 && it.y < cy + 16 && Math.abs(x - catcher.x) < catcher.w / 2 + 6) {
+        items.splice(i, 1);
+        if (it.bad) {
+          score = Math.max(0, score - 1);
+          pops.push({ x, y: cy - 30, t: 0, txt: '−1', c: '#FFB3C1' });
+          app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake');
+        } else {
+          score++; catcher.bounce = 1;
+          pops.push({ x, y: cy - 30, t: 0, txt: '+1', c: '#F2B544' });
+        }
+        updateHud();
+        if (score >= GOAL && !won) win();
+        continue;
+      }
+      if (it.y > H + 40) { items.splice(i, 1); continue; }
+      emoji(it.bad ? '💔' : '❤️', x, it.y, it.size, it.rot);
+    }
+
+    // catcher
+    const s = 58 + catcher.bounce * 10;
+    emoji('💌', catcher.x, catcher.y - catcher.bounce * 6, s, 0);
+
+    // pops
+    for (let i = pops.length - 1; i >= 0; i--) {
+      const p = pops[i]; p.t += dt;
+      if (p.t > 0.8) { pops.splice(i, 1); continue; }
+      ctx.globalAlpha = 1 - p.t / 0.8;
+      ctx.fillStyle = p.c; ctx.font = '700 20px Unbounded, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(p.txt, p.x, p.y - p.t * 40);
+      ctx.globalAlpha = 1;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  function start() {
+    $('ovStart').classList.remove('on');
+    $('hud').classList.add('on');
+    resize();
+    catcher.x = catcher.tx = W / 2;
+    items = []; pops = []; score = 0; elapsed = 0; spawnT = 0.4; won = false;
+    updateHud();
+    running = true; last = performance.now();
+    requestAnimationFrame(frame);
+  }
+  $('startBtn').addEventListener('click', start);
+
+  function win() {
+    won = true;
+    items.forEach(it => { it.vy *= 2.5; });
+    hearts(36);
+    setTimeout(() => {
+      running = false;
+      $('hud').classList.remove('on');
+      ctx.clearRect(0, 0, W, H);
+      $('ovInvite').classList.add('on');
+    }, 1100);
+  }
+
+  window.addEventListener('resize', () => { if (running) resize(); });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && running) last = performance.now();
+  });
+
+  // ================= INVITATION =================
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+  }
+  const state = { place: null, date: null, time: null };
+  const no = $('no'), yes = $('yes'), tease = $('tease');
+  const noTexts = ['Нет', 'Точно нет?', 'Подумай ещё', 'Ну пожалуйста', 'Я же старался', 'Кнопка устала', 'Последний шанс', 'Не поймаешь'];
+  const teases = ['', 'Кнопка «Нет» что-то нервничает…', 'Кажется, она не хочет, чтобы её нажимали.', 'А вот «Да» становится всё заметнее.', 'Намёк понят?', 'Вселенная голосует за «Да».'];
+  let tries = 0;
+
+  function runAway(e) {
+    if (e) e.preventDefault();
+    tries++;
+    no.textContent = noTexts[Math.min(tries, noTexts.length - 1)];
+    tease.textContent = teases[Math.min(tries, teases.length - 1)];
+    yes.style.transform = 'scale(' + Math.min(1 + tries * 0.12, 1.9) + ')';
+    const rect = no.getBoundingClientRect();
+    if (!no.classList.contains('flying')) { no.style.left = rect.left + 'px'; no.style.top = rect.top + 'px'; no.classList.add('flying'); }
+    const pad = 16, maxX = window.innerWidth - rect.width - pad, maxY = window.innerHeight - rect.height - pad;
+    const yr = yes.getBoundingClientRect();
+    let x, y, g = 0;
+    do { x = pad + Math.random() * Math.max(0, maxX - pad); y = pad + Math.random() * Math.max(0, maxY - pad); g++; }
+    while (g < 20 && x < yr.right + 20 && x + rect.width > yr.left - 20 && y < yr.bottom + 20 && y + rect.height > yr.top - 20);
+    requestAnimationFrame(() => { no.style.left = x + 'px'; no.style.top = y + 'px'; });
+    if (tries >= 8) {
+      no.style.transition = 'opacity .4s'; no.style.opacity = '0';
+      setTimeout(() => { no.style.display = 'none'; tease.textContent = 'Кнопка «Нет» сбежала насовсем. Остался только один вариант 🙂'; }, 400);
+    }
+  }
+  no.addEventListener('mouseenter', runAway);
+  no.addEventListener('touchstart', runAway, { passive: false });
+  no.addEventListener('click', runAway);
+
+  yes.addEventListener('click', () => { no.style.display = 'none'; hearts(28); show('s2'); });
+
+  const places = $('places');
+  places.addEventListener('click', (e) => {
+    const b = e.target.closest('.choice'); if (!b) return;
+    places.querySelectorAll('.choice').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    b.setAttribute('aria-pressed', 'true'); state.place = b.dataset.v; $('toS3').disabled = false;
+  });
+  $('toS3').addEventListener('click', () => show('s3'));
+
+  const dateEl = $('date'), today = new Date();
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  dateEl.min = iso(today);
+  function checkS3() {
+    $('toS4').disabled = !(state.date && state.time);
+    $('hint3').textContent = (!state.date && state.time) ? 'Осталось выбрать день.' : (state.date && !state.time) ? 'Осталось выбрать время.' : '';
+  }
+  dateEl.addEventListener('change', () => { state.date = dateEl.value || null; checkS3(); });
+  const times = $('times');
+  times.addEventListener('click', (e) => {
+    const b = e.target.closest('.time'); if (!b) return;
+    times.querySelectorAll('.time').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    b.setAttribute('aria-pressed', 'true'); state.time = b.dataset.v; checkS3();
+  });
+  function prettyDate(v) {
+    const [y, m, d] = v.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  $('toS4').addEventListener('click', () => {
+    $('rPlace').textContent = state.place;
+    $('rDate').textContent = prettyDate(state.date);
+    $('rTime').textContent = state.time.charAt(0).toUpperCase() + state.time.slice(1);
+    show('s4'); hearts(40);
+  });
+  $('restart').addEventListener('click', () => show('s2'));
+
+  function fallback(text) {
+    try {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); document.body.removeChild(ta); return ok;
+    } catch (e) { return false; }
+  }
+  $('send').addEventListener('click', async () => {
+    const msg = 'Да! 💌 Иду с тобой на свидание.\nКуда: ' + state.place + '\nКогда: ' + prettyDate(state.date) + ', ' + state.time;
+    if (navigator.share) { try { await navigator.share({ text: msg }); $('hint4').textContent = 'Отправлено!'; return; } catch (e) {} }
+    let ok = false;
+    if (navigator.clipboard && window.isSecureContext) { try { await navigator.clipboard.writeText(msg); ok = true; } catch (e) { ok = fallback(msg); } }
+    else ok = fallback(msg);
+    $('hint4').textContent = ok ? 'Ответ скопирован — вставь его в чат со мной.' : msg;
+  });
+
+  function hearts(n) {
+    if (reduce) return;
+    const set = ['💗', '💖', '❤️', '💘', '✨'];
+    for (let i = 0; i < n; i++) {
+      const h = document.createElement('div'); h.className = 'heart';
+      h.textContent = set[Math.floor(Math.random() * set.length)];
+      h.style.left = Math.random() * 100 + 'vw';
+      h.style.fontSize = (16 + Math.random() * 20) + 'px';
+      h.style.animationDuration = (2.2 + Math.random() * 2.2) + 's';
+      h.style.animationDelay = (Math.random() * 0.6) + 's';
+      document.body.appendChild(h); setTimeout(() => h.remove(), 5500);
+    }
+  }
+})();
+</script>
+</body>
+</html>
