@@ -182,7 +182,7 @@
         </section>
 
       </div>
-      <div class="ticket-stub"><span>Билет на одно свидание</span><span class="serial" id="serial">№ 0001</span></div>
+      <div class="ticket-stub"><span>Билет на одно свидание</span><span class="serial" id="serial">№ 1</span></div>
     </div>
   </div>
 </div>
@@ -193,7 +193,6 @@
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const GOAL = 15;
   $('goal').textContent = GOAL;
-  $('serial').textContent = '№ ' + String(Math.floor(1000 + Math.random() * 9000));
 
   // ================= GAME =================
   const canvas = $('game'), ctx = canvas.getContext('2d'), app = $('app');
@@ -408,7 +407,7 @@
       document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); document.body.removeChild(ta); return ok;
     } catch (e) { return false; }
   }
-  const TG = 'DemidCOO';
+  const TG = 'FMLFuckMyLife';
   $('send').addEventListener('click', async () => {
     const msg = 'Да! 💌 Иду с тобой на свидание.\nКуда: ' + state.place + '\nКогда: ' + prettyDate(state.date) + ', ' + state.time;
     let ok = false;
